@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PokéBlock – Open World Pokémon</title>
+  <meta name="description" content="3D open world Pokémon game with Minecraft aesthetics. Catch, battle and explore!" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #000;
+      overflow: hidden;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #fff;
+      user-select: none;
+    }
+    #game-canvas { display: block; width: 100vw; height: 100vh; }
+
+    /* Loading screen */
+    #loading-screen {
+      position: fixed; inset: 0;
+      background: linear-gradient(135deg, #0a0a1a 0%, #0d1f0d 50%, #0a0a1a 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 1000;
+      transition: opacity 0.8s ease;
+    }
+    #loading-screen.hidden { opacity: 0; pointer-events: none; }
+    .loading-logo {
+      font-size: 4rem; font-weight: 900; letter-spacing: -2px;
+      background: linear-gradient(135deg, #f5a623, #e8331f, #3b82f6);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none; margin-bottom: 1rem;
+      animation: logoPulse 2s ease-in-out infinite;
+    }
+    .loading-sub { font-size: 1rem; opacity: 0.5; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 3rem; }
+    .loading-bar-wrap { width: 320px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+    .loading-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #f5a623, #e8331f); border-radius: 3px; transition: width 0.3s ease; }
+    .loading-status { margin-top: 1rem; font-size: 0.8rem; opacity: 0.4; letter-spacing: 1px; }
+    @keyframes logoPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.03)} }
+
+    /* HUD */
+    #hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+    #hud.hidden { display: none; }
+
+    /* Crosshair */
+    #crosshair {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      width: 24px; height: 24px;
+    }
+    #crosshair::before, #crosshair::after {
+      content: ''; position: absolute; background: rgba(255,255,255,0.8);
+      border-radius: 2px;
+    }
+    #crosshair::before { width: 2px; height: 100%; left: 50%; top: 0; transform: translateX(-50%); }
+    #crosshair::after  { width: 100%; height: 2px; top: 50%; left: 0; transform: translateY(-50%); }
+
+    /* Damage flash */
+    #damage-flash {
+      position: fixed; inset: 0; background: #f00;
+      opacity: 0; pointer-events: none; z-index: 8;
+      transition: opacity 0.15s;
+    }
+
+    /* ---- Hotbar ---- */
+    #hotbar {
+      position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 4px;
+    }
+    .hb-slot {
+      width: 50px; height: 50px; border-radius: 6px;
+      background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
+      border: 2px solid rgba(255,255,255,0.15);
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; position: relative;
+      font-size: 1.5rem; transition: border-color 0.1s, box-shadow 0.1s;
+    }
+    .hb-slot.selected {
+      border-color: rgba(255,220,0,0.9);
+      box-shadow: 0 0 12px rgba(255,220,0,0.4);
+    }
+    .hb-slot .hb-count {
+      position: absolute; bottom: 2px; right: 4px;
+      font-size: 0.65rem; font-weight: 700;
+      color: #fff; text-shadow: 1px 1px 0 #000;
+    }
+    .hb-slot .hb-num {
+      position: absolute; top: 1px; left: 4px;
+      font-size: 0.55rem; opacity: 0.4;
+    }
+
+    /* ---- Hearts & Hunger ---- */
+    #status-bars {
+      position: absolute; bottom: 66px; left: 50%; transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    #hearts-row, #hunger-row {
+      display: flex; gap: 1px;
+    }
+    .heart-icon, .hunger-icon { font-size: 1.1rem; line-height: 1; }
+
+    /* ---- Pokémon team (bottom right) ---- */
+    #bottom-hud {
+      position: absolute; bottom: 70px; right: 24px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .pokeball-slot {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+      border: 2px solid rgba(255,255,255,0.12);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; transition: all 0.2s;
+    }
+    .pokeball-slot.active { border-color: rgba(255,200,0,0.6); box-shadow: 0 0 16px rgba(255,200,0,0.3); }
+
+    /* ---- Inventory Overlay ---- */
+    #inventory-overlay {
+      position: fixed; inset: 0; z-index: 60;
+      background: rgba(0,0,0,0.82); backdrop-filter: blur(18px);
+      display: none; align-items: center; justify-content: center;
+    }
+    #inventory-overlay.active { display: flex; }
+    .inv-box {
+      background: rgba(14,14,24,0.97); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 18px; padding: 28px; min-width: 520px;
+    }
+    .inv-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 14px; opacity: 0.8; }
+    .inv-section-label { font-size: 0.7rem; opacity: 0.4; margin: 10px 0 4px; text-transform: uppercase; letter-spacing: 1px; }
+    .inv-grid {
+      display: grid; grid-template-columns: repeat(9, 46px);
+      gap: 4px;
+    }
+    .inv-slot {
+      width: 46px; height: 46px; border-radius: 6px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; cursor: pointer; position: relative;
+      font-size: 1.3rem; transition: background 0.1s, border-color 0.1s;
+    }
+    .inv-slot:hover { background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.3); }
+    .inv-slot .inv-count {
+      position: absolute; bottom: 2px; right: 4px;
+      font-size: 0.62rem; font-weight: 700; color: #fff; text-shadow: 1px 1px 0 #000;
+    }
+    /* 2×2 crafting inside inventory */
+    .craft-area { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
+    .craft-grid-2 { display: grid; grid-template-columns: repeat(2,46px); gap: 4px; }
+    .craft-arrow { font-size: 1.5rem; opacity: 0.5; }
+    .craft-output .inv-slot { border-color: rgba(255,200,0,0.3); }
+    .inv-close {
+      display: block; margin-top: 16px; padding: 8px; text-align: center;
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; cursor: pointer; pointer-events: all;
+      font-size: 0.85rem; transition: background 0.1s;
+    }
+    .inv-close:hover { background: rgba(255,255,255,0.14); }
+
+    /* ---- Furnace Overlay ---- */
+    #furnace-overlay {
+      position: fixed; inset: 0; z-index: 65;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(18px);
+      display: none; align-items: center; justify-content: center;
+    }
+    #furnace-overlay.active { display: flex; }
+    .furnace-box {
+      background: rgba(14,14,24,0.97); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 18px; padding: 32px; min-width: 340px;
+    }
+    .furnace-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; }
+    .furnace-grid { display: flex; align-items: center; gap: 20px; }
+    .furnace-col { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+    .furnace-label { font-size: 0.7rem; opacity: 0.5; text-transform: uppercase; }
+    .furnace-slot {
+      width: 52px; height: 52px; border-radius: 8px;
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; cursor: pointer; transition: background 0.1s;
+    }
+    .furnace-slot:hover { background: rgba(255,255,255,0.14); }
+    .furnace-slot.f-out { border-color: rgba(255,200,0,0.4); }
+    .furnace-mid { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .f-flame { font-size: 1.5rem; transition: opacity 0.3s; }
+    .f-arrow { font-size: 1.2rem; opacity: 0.6; }
+    .f-bar-wrap { width: 60px; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+    .f-bar { height: 100%; width: 0%; background: linear-gradient(90deg,#f97316,#fbbf24); border-radius: 4px; transition: width 0.3s; }
+    .furnace-close {
+      display: block; width: 100%; margin-top: 20px; padding: 10px;
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; color: #fff; cursor: pointer; font-size: 0.9rem;
+    }
+    .furnace-close:hover { background: rgba(255,255,255,0.14); }
+    .f-progress-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+
+    /* ---- Action notice (item pickup) ---- */
+    #action-notice {
+      position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+      border-radius: 8px; padding: 4px 14px;
+      font-size: 0.8rem; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    #action-notice.show { opacity: 1; }
+
+    /* Mini-map */
+    #minimap {
+      position: absolute; top: 20px; right: 20px;
+      width: 160px; height: 160px; border-radius: 12px;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.1);
+      overflow: hidden;
+    }
+    #minimap canvas { width: 100%; height: 100%; }
+
+    /* Coords */
+    #coords {
+      position: absolute; top: 20px; left: 20px;
+      font-size: 0.75rem; opacity: 0.5;
+      font-family: 'Courier New', monospace;
+      line-height: 1.6;
+    }
+
+    /* Encounter notice */
+    #encounter-notice {
+      position: absolute; top: 30%; left: 50%; transform: translateX(-50%) translateY(-20px);
+      background: rgba(0,0,0,0.8); backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,200,0,0.3);
+      border-radius: 16px; padding: 12px 28px;
+      font-size: 1.1rem; font-weight: 600; letter-spacing: 1px;
+      opacity: 0; transition: all 0.3s;
+      color: #ffd700; text-shadow: 0 0 20px rgba(255,215,0,0.5);
+      pointer-events: none;
+    }
+    #encounter-notice.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Battle Screen */
+    #battle-screen {
+      position: fixed; inset: 0; z-index: 100;
+      display: none; flex-direction: column;
+      background: linear-gradient(180deg, #87CEEB 0%, #98D8C8 60%, #4a7c59 60%, #3d6b4a 100%);
+    }
+    #battle-screen.active { display: flex; }
+    .battle-arena {
+      flex: 1; position: relative; overflow: hidden;
+    }
+    .battle-enemy-area {
+      position: absolute; top: 20px; left: 20px; right: 50%;
+    }
+    .battle-player-area {
+      position: absolute; bottom: 20px; right: 20px; left: 50%;
+    }
+    .battle-pokemon-sprite {
+      width: 180px; height: 180px; image-rendering: pixelated;
+      filter: drop-shadow(0 8px 16px rgba(0,0,0,0.4));
+    }
+    .battle-hpbar-wrap {
+      background: rgba(0,0,0,0.7); border-radius: 12px;
+      padding: 10px 14px; backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.1);
+      min-width: 220px;
+    }
+    .battle-hpbar-name {
+      font-size: 0.9rem; font-weight: 700; margin-bottom: 6px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .battle-hpbar-level { font-size: 0.75rem; opacity: 0.6; }
+    .battle-hpbar-track { height: 8px; background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden; }
+    .battle-hpbar-fill { height: 100%; background: linear-gradient(90deg, #22c55e, #4ade80); border-radius: 4px; transition: width 0.5s ease; }
+    .battle-hpbar-fill.yellow { background: linear-gradient(90deg, #eab308, #fbbf24); }
+    .battle-hpbar-fill.red { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+    /* Battle UI panel */
+    #battle-ui {
+      background: rgba(0,0,0,0.9); backdrop-filter: blur(16px);
+      border-top: 2px solid rgba(255,255,255,0.1);
+      padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+      max-height: 220px;
+    }
+    .battle-message-box {
+      grid-column: 1/-1;
+      font-size: 1rem; line-height: 1.6;
+      min-height: 52px; padding: 8px;
+    }
+    .battle-actions { grid-column: 1/-1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .battle-btn {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px; padding: 12px 16px; cursor: pointer;
+      font-size: 0.9rem; font-weight: 600; color: #fff;
+      transition: all 0.15s; pointer-events: all;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .battle-btn:hover { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.3); transform: translateY(-1px); }
+    .battle-btn:active { transform: translateY(0); }
+    .battle-btn.fire   { border-color: rgba(239,68,68,0.5); }
+    .battle-btn.water  { border-color: rgba(59,130,246,0.5); }
+    .battle-btn.grass  { border-color: rgba(34,197,94,0.5); }
+    .battle-btn.normal { border-color: rgba(200,200,200,0.5); }
+    .move-pp { margin-left: auto; font-size: 0.75rem; opacity: 0.5; }
+
+    .battle-main-btns { grid-column: 1/-1; display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+    .battle-main-btn {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px; padding: 14px 8px; cursor: pointer; pointer-events: all;
+      font-size: 0.85rem; font-weight: 600; color: #fff;
+      text-align: center; transition: all 0.15s;
+    }
+    .battle-main-btn:hover { background: rgba(255,255,255,0.14); }
+    .battle-main-btn .icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+
+    /* Starter selection */
+    #starter-screen {
+      position: fixed; inset: 0; z-index: 200;
+      background: linear-gradient(135deg, #0a0a1a 0%, #0d1030 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      transition: opacity 0.8s; gap: 24px;
+    }
+    #starter-screen.hidden { opacity: 0; pointer-events: none; }
+    .starter-title { font-size: 2rem; font-weight: 800; letter-spacing: -1px; }
+    .starter-sub { opacity: 0.5; font-size: 0.9rem; margin-top: -16px; }
+    .starter-cards { display: flex; gap: 24px; }
+    .starter-card {
+      background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 20px; padding: 28px 32px; cursor: pointer;
+      text-align: center; transition: all 0.25s; min-width: 160px;
+    }
+    .starter-card:hover { transform: translateY(-6px); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); }
+    .starter-card.bulbasaur:hover { border-color: #22c55e; box-shadow: 0 0 32px rgba(34,197,94,0.2); }
+    .starter-card.charmander:hover { border-color: #f97316; box-shadow: 0 0 32px rgba(249,115,22,0.2); }
+    .starter-card.squirtle:hover { border-color: #3b82f6; box-shadow: 0 0 32px rgba(59,130,246,0.2); }
+    .starter-card-icon { font-size: 4rem; display: block; margin-bottom: 12px; }
+    .starter-card-name { font-size: 1.1rem; font-weight: 700; }
+    .starter-card-type { font-size: 0.75rem; opacity: 0.5; margin-top: 4px; }
+
+    /* Pause / ESC menu */
+    #pause-menu {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(16px);
+      display: none; align-items: center; justify-content: center;
+    }
+    #pause-menu.active { display: flex; }
+    .pause-box {
+      background: rgba(20,20,30,0.95); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px; padding: 40px 48px; text-align: center; min-width: 300px;
+    }
+    .pause-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 24px; }
+    .pause-btn {
+      display: block; width: 100%; padding: 12px; margin-bottom: 10px;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px; color: #fff; font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .pause-btn:hover { background: rgba(255,255,255,0.15); }
+
+    /* Controls hint */
+    #controls-hint {
+      position: absolute; bottom: 24px; left: 24px;
+      font-size: 0.72rem; opacity: 0.35; line-height: 1.8;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* Pokédex overlay */
+    #pokedex-overlay {
+      position: fixed; inset: 0; z-index: 60;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(20px);
+      display: none; align-items: center; justify-content: center;
+    }
+    #pokedex-overlay.active { display: flex; }
+    .pokedex-box {
+      background: rgba(18,18,28,0.98); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px; padding: 32px; width: 700px; max-height: 80vh;
+      overflow-y: auto;
+    }
+    .pokedex-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .pokedex-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+    .pokedex-entry {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px; padding: 10px; text-align: center; font-size: 0.75rem;
+    }
+    .pokedex-entry.caught { border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.05); }
+    .pokedex-entry-icon { font-size: 2rem; }
+    .close-btn {
+      background: rgba(255,255,255,0.1); border: none; color: #fff;
+      border-radius: 8px; padding: 6px 14px; cursor: pointer; font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loading-screen">
+  <div class="loading-logo">PokéBlock</div>
+  <div class="loading-sub">Open World Edition</div>
+  <div class="loading-bar-wrap"><div class="loading-bar" id="loading-bar"></div></div>
+  <div class="loading-status" id="loading-status">Initializing engine...</div>
+</div>
+
+<!-- Starter Selection -->
+<div id="starter-screen" class="hidden">
+  <div class="starter-title">🎒 Choose Your Starter</div>
+  <div class="starter-sub">Your adventure begins here</div>
+  <div class="starter-cards">
+    <div class="starter-card bulbasaur" id="starter-bulbasaur">
+      <span class="starter-card-icon">🌿</span>
+      <div class="starter-card-name">Bulbasaur</div>
+      <div class="starter-card-type">Grass / Poison</div>
+    </div>
+    <div class="starter-card charmander" id="starter-charmander">
+      <span class="starter-card-icon">🔥</span>
+      <div class="starter-card-name">Charmander</div>
+      <div class="starter-card-type">Fire</div>
+    </div>
+    <div class="starter-card squirtle" id="starter-squirtle">
+      <span class="starter-card-icon">💧</span>
+      <div class="starter-card-name">Squirtle</div>
+      <div class="starter-card-type">Water</div>
+    </div>
+  </div>
+</div>
+
+<!-- Game Canvas -->
+<canvas id="game-canvas"></canvas>
+
+<!-- Damage flash -->
+<div id="damage-flash"></div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div id="crosshair"></div>
+  <div id="coords"></div>
+  <div id="minimap"><canvas id="minimap-canvas" width="160" height="160"></canvas></div>
+
+  <!-- Hearts & Hunger -->
+  <div id="status-bars">
+    <div id="hearts-row"></div>
+    <div id="hunger-row"></div>
+  </div>
+
+  <!-- Hotbar -->
+  <div id="hotbar">
+    <div class="hb-slot" id="hb-0"><span class="hb-num">1</span><span id="hb-0-icon"></span><span class="hb-count" id="hb-0-count"></span></div>
+    <div class="hb-slot" id="hb-1"><span class="hb-num">2</span><span id="hb-1-icon"></span><span class="hb-count" id="hb-1-count"></span></div>
+    <div class="hb-slot" id="hb-2"><span class="hb-num">3</span><span id="hb-2-icon"></span><span class="hb-count" id="hb-2-count"></span></div>
+    <div class="hb-slot" id="hb-3"><span class="hb-num">4</span><span id="hb-3-icon"></span><span class="hb-count" id="hb-3-count"></span></div>
+    <div class="hb-slot" id="hb-4"><span class="hb-num">5</span><span id="hb-4-icon"></span><span class="hb-count" id="hb-4-count"></span></div>
+    <div class="hb-slot" id="hb-5"><span class="hb-num">6</span><span id="hb-5-icon"></span><span class="hb-count" id="hb-5-count"></span></div>
+    <div class="hb-slot" id="hb-6"><span class="hb-num">7</span><span id="hb-6-icon"></span><span class="hb-count" id="hb-6-count"></span></div>
+    <div class="hb-slot" id="hb-7"><span class="hb-num">8</span><span id="hb-7-icon"></span><span class="hb-count" id="hb-7-count"></span></div>
+    <div class="hb-slot" id="hb-8"><span class="hb-num">9</span><span id="hb-8-icon"></span><span class="hb-count" id="hb-8-count"></span></div>
+  </div>
+
+  <!-- Pokémon team (right side) -->
+  <div id="bottom-hud">
+    <div class="pokeball-slot" id="slot-0">⚪</div>
+    <div class="pokeball-slot active" id="slot-1">🔴</div>
+    <div class="pokeball-slot" id="slot-2">⚪</div>
+    <div class="pokeball-slot" id="slot-3">⚪</div>
+    <div class="pokeball-slot" id="slot-4">⚪</div>
+    <div class="pokeball-slot" id="slot-5">⚪</div>
+  </div>
+
+  <div id="encounter-notice">⚡ Wild Pokémon appeared!</div>
+  <div id="action-notice"></div>
+  <div id="controls-hint">
+    WASD – Move &nbsp;|&nbsp; Mouse – Look &nbsp;|&nbsp; Space – Jump<br>
+    E – Inventory &nbsp;|&nbsp; P – Pokédex &nbsp;|&nbsp; ESC – Pause &nbsp;|&nbsp; Shift – Sprint<br>
+    LMB – Mine &nbsp;|&nbsp; RMB – Place/Use &nbsp;|&nbsp; 1-9 / Scroll – Hotbar
+  </div>
+</div>
+
+<!-- Inventory Overlay -->
+<div id="inventory-overlay">
+  <div class="inv-box" style="pointer-events:all">
+    <div class="inv-title">🎒 Inventory</div>
+    <div class="inv-section-label">Bag</div>
+    <div class="inv-grid" id="inv-bag"></div>
+    <div class="inv-section-label">Hotbar</div>
+    <div class="inv-grid" id="inv-hotbar-row"></div>
+    <div class="inv-section-label">Crafting</div>
+    <div class="craft-area">
+      <div class="craft-grid-2" id="craft-grid-2x2"></div>
+      <div class="craft-arrow">➡</div>
+      <div class="craft-output">
+        <div class="inv-slot" id="craft-output-2x2"></div>
+      </div>
+    </div>
+    <button class="inv-close" id="inv-close">✕ Close</button>
+  </div>
+</div>
+
+<!-- Furnace Overlay -->
+<div id="furnace-overlay"></div>
+
+<!-- Battle Screen -->
+<div id="battle-screen">
+  <div class="battle-arena" id="battle-arena">
+    <div class="battle-enemy-area" id="battle-enemy-area">
+      <div class="battle-hpbar-wrap" id="enemy-hpbar-wrap">
+        <div class="battle-hpbar-name">
+          <span id="enemy-name">---</span>
+          <span class="battle-hpbar-level" id="enemy-level">Lv.1</span>
+        </div>
+        <div class="battle-hpbar-track"><div class="battle-hpbar-fill" id="enemy-hp-fill" style="width:100%"></div></div>
+      </div>
+    </div>
+    <div class="battle-player-area" id="battle-player-area">
+      <div class="battle-hpbar-wrap" id="player-hpbar-wrap">
+        <div class="battle-hpbar-name">
+          <span id="player-poke-name">---</span>
+          <span class="battle-hpbar-level" id="player-level">Lv.5</span>
+        </div>
+        <div class="battle-hpbar-track"><div class="battle-hpbar-fill" id="player-hp-fill" style="width:100%"></div></div>
+        <div style="font-size:0.72rem;opacity:0.4;margin-top:4px" id="player-hp-text">-- / --</div>
+      </div>
+    </div>
+  </div>
+  <div id="battle-ui">
+    <div class="battle-message-box" id="battle-message">A wild Pokémon appeared!</div>
+    <div class="battle-main-btns" id="battle-main-btns">
+      <div class="battle-main-btn" id="btn-fight"><span class="icon">⚔️</span>FIGHT</div>
+      <div class="battle-main-btn" id="btn-bag"><span class="icon">🎒</span>BAG</div>
+      <div class="battle-main-btn" id="btn-pokemon"><span class="icon">🔴</span>POKÉMON</div>
+      <div class="battle-main-btn" id="btn-run"><span class="icon">🏃</span>RUN</div>
+    </div>
+    <div class="battle-actions" id="battle-moves" style="display:none"></div>
+  </div>
+</div>
+
+<!-- Pause Menu -->
+<div id="pause-menu">
+  <div class="pause-box">
+    <div class="pause-title">⏸ Paused</div>
+    <button class="pause-btn" id="btn-resume">▶ Resume</button>
+    <button class="pause-btn" id="btn-pokedex-pause">📖 Pokédex</button>
+    <button class="pause-btn" id="btn-save">💾 Save Game</button>
+  </div>
+</div>
+
+<!-- Pokédex Overlay -->
+<div id="pokedex-overlay">
+  <div class="pokedex-box">
+    <div class="pokedex-header">
+      <h2>📖 Pokédex</h2>
+      <button class="close-btn" id="close-pokedex">✕ Close</button>
+    </div>
+    <div class="pokedex-grid" id="pokedex-grid"></div>
+  </div>
+</div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

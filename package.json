@@ -1,0 +1,20 @@
+{
+  "name": "poke-block",
+  "version": "0.1.0",
+  "description": "3D Open World Pokémon game with Minecraft aesthetics",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "simplex-noise": "^4.0.1",
+    "three": "^0.165.0"
+  },
+  "devDependencies": {
+    "eslint": "^10.3.0",
+    "prettier": "^3.8.3",
+    "vite": "^5.2.0"
+  }
+}
