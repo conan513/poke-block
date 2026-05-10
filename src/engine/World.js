@@ -285,7 +285,21 @@ export class World {
 
             const uvRect = this.textureLoader.getUV(blockId, face.dir);
             const [u0,v0,u1,v1] = uvRect;
-            const uvCorners = [[u0,v1],[u1,v1],[u1,v0],[u0,v0]];
+
+            // standard UV mapping for faces: BL, BR, TR, TL
+            // If v0 is bottom and v1 is top: [u0,v0], [u1,v0], [u1,v1], [u0,v1]
+            // We need to match the corners: 
+
+            // 0: Bottom-Left, 1: Bottom-Right, 2: Top-Right, 3: Top-Left
+            let uvCorners = [[u0,v0], [u1,v0], [u1,v1], [u0,v1]];
+
+            // Random rotation for top faces of natural ground blocks to break tiling pattern
+            if (face.dir[1] === 1 && (blockId === BLOCK.GRASS || blockId === BLOCK.DIRT || blockId === BLOCK.SAND || blockId === BLOCK.STONE || blockId === BLOCK.BEDROCK || blockId === BLOCK.SNOW || blockId === BLOCK.PODZOL)) {
+              const hash = Math.abs((wx * 3129871) ^ (wz * 116129781)) % 4;
+              if (hash === 1) uvCorners = [[uvCorners[1][0], uvCorners[1][1]], [uvCorners[2][0], uvCorners[2][1]], [uvCorners[3][0], uvCorners[3][1]], [uvCorners[0][0], uvCorners[0][1]]];
+              else if (hash === 2) uvCorners = [[uvCorners[2][0], uvCorners[2][1]], [uvCorners[3][0], uvCorners[3][1]], [uvCorners[0][0], uvCorners[0][1]], [uvCorners[1][0], uvCorners[1][1]]];
+              else if (hash === 3) uvCorners = [[uvCorners[3][0], uvCorners[3][1]], [uvCorners[0][0], uvCorners[0][1]], [uvCorners[1][0], uvCorners[1][1]], [uvCorners[2][0], uvCorners[2][1]]];
+            }
 
             // Proper Smooth Lighting (Minecraft-style Vertex AO)
             const aoValues = face.corners.map(([cx2,cy2,cz2]) => {
@@ -315,7 +329,7 @@ export class World {
 
             for (let i = 0; i < 4; i++) {
               const [cx2,cy2,cz2] = face.corners[i];
-              positions.push(wx + cx2, wy + cy2, wz + cz2);
+              positions.push(wx + 0.5 + cx2, wy + 0.5 + cy2, wz + 0.5 + cz2);
               normals.push(...face.nx);
               uvs.push(...uvCorners[i]);
               const ao = aoValues[i];
@@ -357,14 +371,21 @@ export class World {
 
             const uvRect = this.textureLoader.getUV(blockId, face.dir);
             const [u0,v0,u1,v1] = uvRect;
-            const uvCorners = [[u0,v1],[u1,v1],[u1,v0],[u0,v0]];
+            let uvCorners = [[u0,v0], [u1,v0], [u1,v1], [u0,v1]];
+
+            if (face.dir[1] === 1 && blockId === BLOCK.WATER) {
+              const hash = Math.abs((wx * 3129871) ^ (wz * 116129781)) % 4;
+              if (hash === 1) uvCorners = [[uvCorners[1][0], uvCorners[1][1]], [uvCorners[2][0], uvCorners[2][1]], [uvCorners[3][0], uvCorners[3][1]], [uvCorners[0][0], uvCorners[0][1]]];
+              else if (hash === 2) uvCorners = [[uvCorners[2][0], uvCorners[2][1]], [uvCorners[3][0], uvCorners[3][1]], [uvCorners[0][0], uvCorners[0][1]], [uvCorners[1][0], uvCorners[1][1]]];
+              else if (hash === 3) uvCorners = [[uvCorners[3][0], uvCorners[3][1]], [uvCorners[0][0], uvCorners[0][1]], [uvCorners[1][0], uvCorners[1][1]], [uvCorners[2][0], uvCorners[2][1]]];
+            }
 
             let tr = 1.0, tg = 1.0, tb = 1.0;
             if (blockId === BLOCK.OAK_LEAVES) { tr = br; tg = bg; tb = bb; }
 
             for (let i = 0; i < 4; i++) {
               const [cx2,cy2,cz2] = face.corners[i];
-              tPositions.push(wx+cx2, wy+cy2, wz+cz2);
+              tPositions.push(wx + 0.5 + cx2, wy + 0.5 + cy2, wz + 0.5 + cz2);
               tNormals.push(...face.nx);
               tUvs.push(...uvCorners[i]);
               tColors.push(0.8 * tr, 0.8 * tg, 0.8 * tb);
@@ -417,7 +438,7 @@ export class World {
           `
           #include <begin_vertex>
           // Apply wave only to water blocks (water level is y<=28 in this engine)
-          if (position.y <= 28.5) {
+          if (position.y <= 29.5) {
             float wave = sin(position.x * 2.0 + time * 3.0) * cos(position.z * 2.0 + time * 2.0) * 0.1;
             transformed.y += wave;
           }
@@ -468,12 +489,13 @@ export class World {
           const uvRect = this.textureLoader.getUV(blockId, [0,1,0]);
           const [u0,v0,u1,v1] = uvRect;
 
+          const cx = wx + 0.5, cz = wz + 0.5;
           // Quad 1: Z-axis
-          positions.push(wx-half,y+h,wz, wx+half,y+h,wz, wx+half,y,wz, wx-half,y,wz);
+          positions.push(cx-half,y+h,cz, cx+half,y+h,cz, cx+half,y,cz, cx-half,y,cz);
           uvs.push(u0,v0, u1,v0, u1,v1, u0,v1);
           colors.push(tr,tg,tb, tr,tg,tb, tr,tg,tb, tr,tg,tb);
           // Quad 2: X-axis
-          positions.push(wx,y+h,wz-half, wx,y+h,wz+half, wx,y,wz+half, wx,y,wz-half);
+          positions.push(cx,y+h,cz-half, cx,y+h,cz+half, cx,y,cz+half, cx,y,cz-half);
           uvs.push(u0,v0, u1,v0, u1,v1, u0,v1);
           colors.push(tr,tg,tb, tr,tg,tb, tr,tg,tb, tr,tg,tb);
         }
