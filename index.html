@@ -397,21 +397,21 @@
 
 <!-- Starter Selection -->
 <div id="starter-screen" class="hidden">
-  <div class="starter-title">🎒 Choose Your Starter</div>
+  <div class="starter-title">Choose Your Starter</div>
   <div class="starter-sub">Your adventure begins here</div>
   <div class="starter-cards">
     <div class="starter-card bulbasaur" id="starter-bulbasaur">
-      <span class="starter-card-icon">🌿</span>
+      <span class="starter-card-icon" style="color:#22c55e;">[GRASS]</span>
       <div class="starter-card-name">Bulbasaur</div>
       <div class="starter-card-type">Grass / Poison</div>
     </div>
     <div class="starter-card charmander" id="starter-charmander">
-      <span class="starter-card-icon">🔥</span>
+      <span class="starter-card-icon" style="color:#f97316;">[FIRE]</span>
       <div class="starter-card-name">Charmander</div>
       <div class="starter-card-type">Fire</div>
     </div>
     <div class="starter-card squirtle" id="starter-squirtle">
-      <span class="starter-card-icon">💧</span>
+      <span class="starter-card-icon" style="color:#3b82f6;">[WATER]</span>
       <div class="starter-card-name">Squirtle</div>
       <div class="starter-card-type">Water</div>
     </div>
@@ -451,15 +451,15 @@
 
   <!-- Pokémon team (right side) -->
   <div id="bottom-hud">
-    <div class="pokeball-slot" id="slot-0">⚪</div>
-    <div class="pokeball-slot active" id="slot-1">🔴</div>
-    <div class="pokeball-slot" id="slot-2">⚪</div>
-    <div class="pokeball-slot" id="slot-3">⚪</div>
-    <div class="pokeball-slot" id="slot-4">⚪</div>
-    <div class="pokeball-slot" id="slot-5">⚪</div>
+    <div class="pokeball-slot" id="slot-0"></div>
+    <div class="pokeball-slot active" id="slot-1"></div>
+    <div class="pokeball-slot" id="slot-2"></div>
+    <div class="pokeball-slot" id="slot-3"></div>
+    <div class="pokeball-slot" id="slot-4"></div>
+    <div class="pokeball-slot" id="slot-5"></div>
   </div>
 
-  <div id="encounter-notice">⚡ Wild Pokémon appeared!</div>
+  <div id="encounter-notice">Wild Pokémon appeared!</div>
   <div id="action-notice"></div>
   <div id="controls-hint">
     WASD – Move &nbsp;|&nbsp; Mouse – Look &nbsp;|&nbsp; Space – Jump<br>
@@ -471,7 +471,7 @@
 <!-- Inventory Overlay -->
 <div id="inventory-overlay">
   <div class="inv-box" style="pointer-events:all">
-    <div class="inv-title">🎒 Inventory</div>
+    <div class="inv-title">Inventory</div>
     <div class="inv-section-label">Bag</div>
     <div class="inv-grid" id="inv-bag"></div>
     <div class="inv-section-label">Hotbar</div>
@@ -479,7 +479,7 @@
     <div class="inv-section-label">Crafting</div>
     <div class="craft-area">
       <div class="craft-grid-2" id="craft-grid-2x2"></div>
-      <div class="craft-arrow">➡</div>
+      <div class="craft-arrow" style="font-weight:bold;color:#ccc;">-></div>
       <div class="craft-output">
         <div class="inv-slot" id="craft-output-2x2"></div>
       </div>
@@ -517,10 +517,10 @@
   <div id="battle-ui">
     <div class="battle-message-box" id="battle-message">A wild Pokémon appeared!</div>
     <div class="battle-main-btns" id="battle-main-btns">
-      <div class="battle-main-btn" id="btn-fight"><span class="icon">⚔️</span>FIGHT</div>
-      <div class="battle-main-btn" id="btn-bag"><span class="icon">🎒</span>BAG</div>
-      <div class="battle-main-btn" id="btn-pokemon"><span class="icon">🔴</span>POKÉMON</div>
-      <div class="battle-main-btn" id="btn-run"><span class="icon">🏃</span>RUN</div>
+      <div class="battle-main-btn" id="btn-fight">FIGHT</div>
+      <div class="battle-main-btn" id="btn-bag">BAG</div>
+      <div class="battle-main-btn" id="btn-pokemon">POKÉMON</div>
+      <div class="battle-main-btn" id="btn-run">RUN</div>
     </div>
     <div class="battle-actions" id="battle-moves" style="display:none"></div>
   </div>
@@ -529,10 +529,10 @@
 <!-- Pause Menu -->
 <div id="pause-menu">
   <div class="pause-box">
-    <div class="pause-title">⏸ Paused</div>
-    <button class="pause-btn" id="btn-resume">▶ Resume</button>
-    <button class="pause-btn" id="btn-pokedex-pause">📖 Pokédex</button>
-    <button class="pause-btn" id="btn-save">💾 Save Game</button>
+    <div class="pause-title">Paused</div>
+    <button class="pause-btn" id="btn-resume">Resume</button>
+    <button class="pause-btn" id="btn-pokedex-pause">Pokédex</button>
+    <button class="pause-btn" id="btn-save">Save Game</button>
   </div>
 </div>
 
@@ -540,7 +540,7 @@
 <div id="pokedex-overlay">
   <div class="pokedex-box">
     <div class="pokedex-header">
-      <h2>📖 Pokédex</h2>
+      <h2>Pokédex</h2>
       <button class="close-btn" id="close-pokedex">✕ Close</button>
     </div>
     <div class="pokedex-grid" id="pokedex-grid"></div>

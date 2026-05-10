@@ -12,14 +12,14 @@ const TYPE_CHART = {
 };
 
 export const TYPES = {
-  fire:    { color: '#f97316', emoji: '🔥' },
-  water:   { color: '#3b82f6', emoji: '💧' },
-  grass:   { color: '#22c55e', emoji: '🌿' },
-  poison:  { color: '#a855f7', emoji: '☠️' },
-  normal:  { color: '#9ca3af', emoji: '⭐' },
-  flying:  { color: '#7dd3fc', emoji: '🌀' },
-  bug:     { color: '#84cc16', emoji: '🐛' },
-  electric:{ color: '#eab308', emoji: '⚡' },
+  fire:    { color: '#f97316' },
+  water:   { color: '#3b82f6' },
+  grass:   { color: '#22c55e' },
+  poison:  { color: '#a855f7' },
+  normal:  { color: '#9ca3af' },
+  flying:  { color: '#7dd3fc' },
+  bug:     { color: '#84cc16' },
+  electric:{ color: '#eab308' },
 };
 
 export const POKEDEX = {
@@ -28,7 +28,6 @@ export const POKEDEX = {
     name: 'Bulbasaur',
     types: ['grass','poison'],
     baseHp: 45, atk: 49, def: 49, spAtk: 65, spDef: 65, spd: 45,
-    emoji: '🌿',
     moves: [
       { name: 'Tackle',     type: 'normal', power: 40, pp: 35, category: 'physical' },
       { name: 'Growl',      type: 'normal', power: 0,  pp: 40, category: 'status', effect: 'lower_atk' },
@@ -44,7 +43,6 @@ export const POKEDEX = {
     name: 'Charmander',
     types: ['fire'],
     baseHp: 39, atk: 52, def: 43, spAtk: 60, spDef: 50, spd: 65,
-    emoji: '🔥',
     moves: [
       { name: 'Scratch',  type: 'normal', power: 40, pp: 35, category: 'physical' },
       { name: 'Growl',    type: 'normal', power: 0,  pp: 40, category: 'status', effect: 'lower_atk' },
@@ -60,7 +58,6 @@ export const POKEDEX = {
     name: 'Squirtle',
     types: ['water'],
     baseHp: 44, atk: 48, def: 65, spAtk: 50, spDef: 64, spd: 43,
-    emoji: '💧',
     moves: [
       { name: 'Tackle',   type: 'normal', power: 40, pp: 35, category: 'physical' },
       { name: 'Tail Whip',type: 'normal', power: 0,  pp: 30, category: 'status', effect: 'lower_def' },
@@ -76,7 +73,6 @@ export const POKEDEX = {
     name: 'Pikachu',
     types: ['electric'],
     baseHp: 35, atk: 55, def: 40, spAtk: 50, spDef: 50, spd: 90,
-    emoji: '⚡',
     moves: [
       { name: 'Thunder Shock', type: 'electric', power: 40, pp: 30, category: 'special', effect: 'paralysis_10' },
       { name: 'Tail Whip',     type: 'normal',   power: 0,  pp: 30, category: 'status' },
@@ -92,7 +88,6 @@ export const POKEDEX = {
     name: 'Pidgey',
     types: ['normal','flying'],
     baseHp: 40, atk: 45, def: 40, spAtk: 35, spDef: 35, spd: 56,
-    emoji: '🐦',
     moves: [
       { name: 'Tackle',   type: 'normal',  power: 40, pp: 35, category: 'physical' },
       { name: 'Sand Attack', type: 'ground', power: 0, pp: 15, category: 'status', effect: 'lower_acc' },
@@ -108,7 +103,6 @@ export const POKEDEX = {
     name: 'Rattata',
     types: ['normal'],
     baseHp: 30, atk: 56, def: 35, spAtk: 25, spDef: 35, spd: 72,
-    emoji: '🐭',
     moves: [
       { name: 'Tackle',    type: 'normal', power: 40, pp: 35, category: 'physical' },
       { name: 'Tail Whip', type: 'normal', power: 0,  pp: 30, category: 'status' },
@@ -124,7 +118,6 @@ export const POKEDEX = {
     name: 'Caterpie',
     types: ['bug'],
     baseHp: 45, atk: 30, def: 35, spAtk: 20, spDef: 20, spd: 45,
-    emoji: '🐛',
     moves: [
       { name: 'Tackle',   type: 'normal', power: 40, pp: 35, category: 'physical' },
       { name: 'String Shot', type: 'bug', power: 0, pp: 40, category: 'status', effect: 'lower_spd' },
@@ -139,7 +132,6 @@ export const POKEDEX = {
     name: 'Meowth',
     types: ['normal'],
     baseHp: 40, atk: 45, def: 35, spAtk: 40, spDef: 40, spd: 90,
-    emoji: '🐱',
     moves: [
       { name: 'Scratch',  type: 'normal', power: 40, pp: 35, category: 'physical' },
       { name: 'Growl',    type: 'normal', power: 0,  pp: 40, category: 'status', effect: 'lower_atk' },
